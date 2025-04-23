@@ -1,56 +1,28 @@
 <?php
-<<<<<<< Updated upstream
-// Kết nối cơ sở dữ liệu
-$host = 'localhost';  // Hoặc IP của máy chủ cơ sở dữ liệu của bạn
-$dbname = 'smobile';  // Tên cơ sở dữ liệu của bạn
-$username = 'root';   // Tên người dùng cơ sở dữ liệu
-$password = '';       // Mật khẩu cơ sở dữ liệu (nếu có)
-
-try {
-    // Khởi tạo đối tượng PDO để kết nối cơ sở dữ liệu
-    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
-    // Thiết lập chế độ lỗi
-=======
 if(defined('CONNECT_PHP_INCLUDED')) {
     define('CONNECT_PHP_INCLUDED', true);
 }
 ob_start();
 try {
     $conn = new PDO("mysql:host=localhost;dbname=smobile;charset=utf8", "root", "");
->>>>>>> Stashed changes
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    echo "Kết nối thất bại: " . $e->getMessage();
-    die();
+    echo $e->getMessage();
 }
-
-// Hàm selectAll - Sử dụng prepared statements
-function selectAll($sql, $params = [])
+function selectAll($sql)
 {
-    global $conn;
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = $GLOBALS['conn']->query($sql);
+    return $result;
 }
-
-// Hàm exSQL - Thực thi câu lệnh SQL như INSERT, UPDATE, DELETE
-function exSQL($sql, $params = [])
+function exSQL($sql)
 {
-    global $conn;
-    $stmt = $conn->prepare($sql);
-    return $stmt->execute($params);
+    $result =  $GLOBALS['conn']->prepare($sql);
+    return $result->execute();
 }
-
-// Hàm rowCount - Trả về số lượng bản ghi
-function rowCount($sql, $params = [])
-{
-    global $conn;
-    $stmt = $conn->prepare($sql);
-    $stmt->execute($params);
-    return $stmt->rowCount();
+function rowCount($sql){
+    $result =  $GLOBALS['conn']->query($sql);
+    return $result->rowCount();
 }
-
-// Thiết lập múi giờ
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 $timestamp = time();
 $today = date('d-m-Y H:i:s', $timestamp);

@@ -1,33 +1,5 @@
-<?php
-include './connect.php';
-
-try {
-    // Xử lý form đăng nhập
-    if (isset($_POST["dangnhap"])) {
-        $email = $_POST["email"];
-        $matkhau = $_POST["matkhau"];
-        
-        // Kiểm tra tài khoản với prepared statement
-        $sql = "SELECT * FROM taikhoan WHERE taikhoan = ? AND matkhau = ? AND status = 0";
-        if (rowCount($sql, [$email, $matkhau]) == 1) {
-            setcookie('user', $email, [
-                'expires' => time() + (86400 * 30),
-                'path' => '/',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'Strict'
-            ]);
-            header('location:index.php');
-            exit();
-        } elseif (rowCount("SELECT * FROM taikhoan WHERE taikhoan = ? AND status = 1", [$email]) == 1) {
-            $error = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin';
-        } else {
-            $error = 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại';
-        }
-    }
-} catch (Exception $e) {
-    $error = $e->getMessage();
-}
+<?php 
+    include './connect.php';
 ?>
 <!doctype html>
 <html lang="zxx">
@@ -80,56 +52,36 @@ try {
 
 <body>
 
-<<<<<<< Updated upstream
-<?php include 'header.php'; ?>
-=======
    
->>>>>>> Stashed changes
 
-<section class="breadcrumb header_bg">
-    <div class="container">
-        <div class="row justify-content-center a2">
-            <div class="col-lg-8 a2">
-                <div class="a1">
-                    <h2>Đăng Nhập</h2>
+  <!--================Home Banner Area =================-->
+  <!-- breadcrumb start-->
+  <section class="breadcrumb header_bg">
+        <div class="container">
+            <div class="row justify-content-center a2">
+                <div class="col-lg-8 a2">
+                        <div class="a1">
+                            <h2>Đăng Nhập</h2>
+                        </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+  <!-- breadcrumb end-->
 
-<section class="login_part">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 col-md-6">
-                <div class="login_part_text text-center">
-                    <div class="login_part_text_iner">
-                        <h2>Mới đến cửa hàng của chúng tôi?</h2>
-                        <p>Vui lòng đăng ký tài khoản để có trải nghiệm tốt nhất</p>
-                        <a href="register.php" class="btn_3">Đăng ký</a>
+    <!--================login_part Area =================-->
+    <section class="login_part">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 col-md-6">
+                    <div class="login_part_text text-center">
+                        <div class="login_part_text_iner">
+                            <h2>Mới đến cửa hàng của chúng tôi?</h2>
+                            <p>Vui lòng đăng ký tài khoản để có trải nghiệm tốt nhất</p>
+                            <a href="register.php" class="btn_3">Đăng ký</a>
+                        </div>
                     </div>
                 </div>
-<<<<<<< Updated upstream
-            </div>
-            <div class="col-lg-6 col-md-6">
-                <div class="login_part_form">
-                    <div class="login_part_form_iner">
-                        <h3>Chào Mừng Trở Lại ! <br> Đăng Nhập Ngay</h3>
-                        <?php if (isset($error)) { ?>
-                            <p class="text-danger ml-3 mb-3"><?= htmlspecialchars($error) ?></p>
-                        <?php } ?>
-                        <form class="row contact_form" action="" method="post" novalidate="novalidate">
-                            <div class="col-md-12 form-group p_star">
-                                <input type="text" class="form-control" name="email" value="" required placeholder="Tài khoản (Email)">
-                            </div>
-                            <div class="col-md-12 form-group p_star">
-                                <input type="password" class="form-control" name="matkhau" value="" required placeholder="Mật khẩu">
-                            </div>
-                            <div class="col-md-12 form-group">
-                                <button type="submit" name="dangnhap" class="btn_3">đăng nhập</button>
-                            </div>
-                        </form>
-=======
                 <div class="col-lg-6 col-md-6">
                     <div class="login_part_form">
                         <div class="login_part_form_iner">
@@ -192,13 +144,11 @@ try {
                                 </div>
                             </form>
                         </div>
->>>>>>> Stashed changes
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
     <!--================login_part end =================-->
 
     <!--::footer_part start::-->
