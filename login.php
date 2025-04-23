@@ -80,7 +80,11 @@ try {
 
 <body>
 
+<<<<<<< Updated upstream
 <?php include 'header.php'; ?>
+=======
+   
+>>>>>>> Stashed changes
 
 <section class="breadcrumb header_bg">
     <div class="container">
@@ -105,6 +109,7 @@ try {
                         <a href="register.php" class="btn_3">Đăng ký</a>
                     </div>
                 </div>
+<<<<<<< Updated upstream
             </div>
             <div class="col-lg-6 col-md-6">
                 <div class="login_part_form">
@@ -124,6 +129,70 @@ try {
                                 <button type="submit" name="dangnhap" class="btn_3">đăng nhập</button>
                             </div>
                         </form>
+=======
+                <div class="col-lg-6 col-md-6">
+                    <div class="login_part_form">
+                        <div class="login_part_form_iner">
+                            <h3>Chào Mừng Trở Lại ! <br> Đăng Nhập Ngay</h3>
+                            <?php
+                                if (isset($_POST["dangnhap"])) {
+                                    $email = ($_POST["email"]);
+                                    $matkhau = ($_POST["matkhau"]);
+                                   
+
+                                    $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE taikhoan = ? AND matkhau = ? AND status = 0 AND phanquyen != 1");
+                                    $stmt->execute([$email, $matkhau]);
+                                    
+                                    if ($stmt->rowCount() == 1) {
+                                        setcookie('user', $email, time() + (86400 * 30), "/");
+                                        header('location:index.php');
+                                        exit();
+                                    } else {
+                                        // Kiểm tra xem tài khoản có bị khóa không
+                                        $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE taikhoan = ? AND status = 1");
+                                        $stmt->execute([$email]);
+                                        if ($stmt->rowCount() == 1) {
+                                            $error = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin';
+                                        } else {
+                                            // Kiểm tra xem có phải tài khoản admin không
+                                            $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE taikhoan = ? AND phanquyen = 1");
+                                            $stmt->execute([$email]);
+                                            if ($stmt->rowCount() == 1) {
+                                                $error = 'Tài khoản này chỉ có thể đăng nhập qua trang quản trị.';
+                                            } else {
+                                                $error = 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại';
+                                            }
+                                        }
+                                    }
+                                }
+                            ?>
+                            <form class="row contact_form" action="" method="post" novalidate="novalidate">
+                                <?php
+                                    if (isset($error)) {
+                                    ?>
+                                        <p class="text-danger ml-3 mb-3"><?= $error ?></p>
+                                    <?php
+                                    }
+                                ?>
+                                <div class="col-md-12 form-group p_star exampleInputName1">
+                                    <input type="text" class="form-control"  name="email" value="" required placeholder="Tài khoản (Email)">
+                                </div>
+                                <div class="col-md-12 form-group p_star">
+                                    <input type="password" class="form-control" name="matkhau" value="" required placeholder="Mật khẩu">
+                                </div>
+                                <div class="col-md-12 form-group">
+                                    <!-- <div class="creat_account d-flex align-items-center">
+                                        <input type="checkbox" id="f-option" name="selector">
+                                        <label for="f-option">Remember me</label>
+                                    </div> -->
+                                    <button type="submit" name="dangnhap" class="btn_3">
+                                        đăng nhập
+                                    </button>
+                                    <!-- <a class="lost_pass" href="#">quên mật khẩu?</a> -->
+                                </div>
+                            </form>
+                        </div>
+>>>>>>> Stashed changes
                     </div>
                 </div>
             </div>

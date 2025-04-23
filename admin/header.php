@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <?php
 include '../connect.php';
 if (isset($_GET["logout"])) {
@@ -10,6 +11,24 @@ if (isset($_COOKIE["user"])) {
         $permission = $row['phanquyen'];
     }
     if ($permission == 1) {
+=======
+<?php 
+    include_once '../connect.php';
+    if (isset($_GET["logout"])) {
+        setcookie("user", null, -1, '/');
+        header('location: login_admin.php'); // Chuyển hướng đến /admin/login.php
+        exit();
+    }
+    if (isset($_COOKIE["user"])) {
+        $user = $_COOKIE["user"];
+        $stmt = $conn->prepare("SELECT phanquyen FROM taikhoan WHERE taikhoan = ?");
+        $stmt->execute([$user]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $permission = $row ? $row['phanquyen'] : 0;
+        if ($permission == 1) {
+  
+  
+>>>>>>> Stashed changes
 ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -206,6 +225,7 @@ if (isset($_COOKIE["user"])) {
                                         <!-- <div class="dropdown-divider"></div>
                   <p class="p-3 mb-0 text-center">Advanced settings</p>
                 </div> -->
+<<<<<<< Updated upstream
                                 </li>
                             </ul>
                             <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
@@ -219,5 +239,22 @@ if (isset($_COOKIE["user"])) {
         }
     } else {
         include '404.php';
+=======
+              </li>
+            </ul>
+            <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+              <span class="mdi mdi-format-line-spacing"></span>
+            </button>
+          </div>
+        </nav>
+    <?php
+        }else{
+            header('location: login_admin.php'); // Chuyển hướng đến /admin/login.php
+            exit();
+        }
+    }else{
+      header('location: login_admin.php'); // Chuyển hướng đến /admin/login.php
+      exit();
+>>>>>>> Stashed changes
     }
             ?>
