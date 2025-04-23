@@ -1,5 +1,4 @@
 <?php
-<<<<<<< Updated upstream
 // Kết nối cơ sở dữ liệu
 $host = 'localhost';  // Hoặc IP của máy chủ cơ sở dữ liệu của bạn
 $dbname = 'smobile';  // Tên cơ sở dữ liệu của bạn
@@ -10,14 +9,12 @@ try {
     // Khởi tạo đối tượng PDO để kết nối cơ sở dữ liệu
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
     // Thiết lập chế độ lỗi
-=======
 if(defined('CONNECT_PHP_INCLUDED')) {
     define('CONNECT_PHP_INCLUDED', true);
 }
 ob_start();
 try {
     $conn = new PDO("mysql:host=localhost;dbname=smobile;charset=utf8", "root", "");
->>>>>>> Stashed changes
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     echo "Kết nối thất bại: " . $e->getMessage();
