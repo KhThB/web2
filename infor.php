@@ -135,7 +135,7 @@
                                     <input type="text" id="hoten" class="form-control" name="hoten" required value="<?= $tencu ?>" placeholder="Họ Tên" required>
                                 </div>
                                 <div class="col-md-12 form-group p_star">
-                                    <p>SDT*</p>
+                                    <p>SĐT*</p>
                                     <input type="text" id="sdt" class="form-control"  name="sdt" value="<?= $sdtcu ?>" placeholder="SDT" required>
                                 </div>
                                 <div class="col-md-12 form-group p_star">
