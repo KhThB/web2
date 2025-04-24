@@ -1,5 +1,5 @@
 <?php
-session_start(); // Add this to initialize the session
+session_start();
 include_once './connect.php';
 
 // Chuyển hướng về giỏ hàng nếu giỏ hàng trống
@@ -8,22 +8,31 @@ if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
     exit();
 }
 
-// Lấy thông tin mặc định từ tài khoản
+// Kiểm tra cookie user và lấy thông tin tài khoản
+$id_taikhoan = null;
 $hoten_macdinh = '';
 $sdt_macdinh = '';
 $diachi_macdinh = '';
-if (isset($_COOKIE["user"])) {
-    $taikhoan = $_COOKIE["user"];
-    $taikhoan_rows = selectAll("SELECT * FROM taikhoan WHERE taikhoan=?", [$taikhoan]);
+
+if (isset($_COOKIE['user']) && !empty($_COOKIE['user'])) {
+    $email = $_COOKIE['user'];
+    $taikhoan_rows = selectAll("SELECT id, hoten, sdt, diachi, status, phanquyen FROM taikhoan WHERE taikhoan = ? AND status = 0 AND phanquyen != 1", [$email]);
     if (!empty($taikhoan_rows)) {
+        $id_taikhoan = $taikhoan_rows[0]['id'];
         $hoten_macdinh = $taikhoan_rows[0]['hoten'] ?? '';
         $sdt_macdinh = $taikhoan_rows[0]['sdt'] ?? '';
         $diachi_macdinh = $taikhoan_rows[0]['diachi'] ?? '';
     }
 }
 
+// Kiểm tra nếu không có id_taikhoan hợp lệ
+if ($id_taikhoan === null) {
+    header("Location: login.php?error=Vui lòng đăng nhập để đặt hàng");
+    exit();
+}
+
 // Xử lý thanh toán
-$order_success = false; // Biến để kiểm tra trạng thái đặt hàng
+$order_success = false;
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $hoten = trim($_POST['hoten'] ?? '');
     $sdt = trim($_POST['sdt'] ?? '');
@@ -49,44 +58,40 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         foreach ($_SESSION['cart'] as $item) {
             $tongtien += $item['gia'] * $item['soluong'];
         }
-        $phiship = 50000; // Phí ship cố định
+        $phiship = 50000;
         $tongcong = $tongtien + $phiship;
 
-        // Lấy ID tài khoản
-        $id_taikhoan = 0;
-        if (isset($_COOKIE["user"])) {
-            $taikhoan = $_COOKIE["user"];
-            $taikhoan_rows = selectAll("SELECT * FROM taikhoan WHERE taikhoan=?", [$taikhoan]);
-            if (!empty($taikhoan_rows)) {
-                $id_taikhoan = $taikhoan_rows[0]['id'];
-            }
-        }
+        // Kiểm tra id_taikhoan
+        $taikhoan_check = selectAll("SELECT id FROM taikhoan WHERE id = ? AND status = 0 AND phanquyen != 1", [$id_taikhoan]);
+        if (empty($taikhoan_check)) {
+            $error = "Lỗi: Tài khoản không tồn tại hoặc không hợp lệ.";
+        } else {
+            try {
+                // Kiểm tra đơn hàng hiện có (status=1)
+                $existing_order = selectAll("SELECT * FROM donhang WHERE id_taikhoan = ? AND status = 1 LIMIT 1", [$id_taikhoan]);
+                if (!empty($existing_order)) {
+                    $donhang_id = $existing_order[0]['id'];
+                    $stmt = $conn->prepare("UPDATE donhang SET diachi = ?, tongtien = ?, thoigian = NOW(), status = 1 WHERE id = ?");
+                    $stmt->execute([$diachi, $tongcong, $donhang_id]);
+                    exSQL("DELETE FROM ctdonhang WHERE id_donhang = ?", [$donhang_id]);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO donhang (id_taikhoan, diachi, tongtien, status, thoigian) VALUES (?, ?, ?, 2, NOW())");
+                    $stmt->execute([$id_taikhoan, $diachi, $tongcong]);
+                    $donhang_id = $conn->lastInsertId();
+                }
 
-        try {
-            // Kiểm tra đơn hàng hiện có (status=1)
-            $existing_order = selectAll("SELECT * FROM donhang WHERE id_taikhoan=? AND status=1 LIMIT 1", [$id_taikhoan]);
-            if (!empty($existing_order)) {
-                $donhang_id = $existing_order[0]['id'];
-                $stmt = $conn->prepare("UPDATE donhang SET diachi=?, tongtien=?, thoigian=NOW(), status=2 WHERE id=?");
-                $stmt->execute([$diachi, $tongcong, $donhang_id]);
-                exSQL("DELETE FROM ctdonhang WHERE id_donhang=?", [$donhang_id]); // Xóa chi tiết cũ
-            } else {
-                $stmt = $conn->prepare("INSERT INTO donhang (id_taikhoan, diachi, tongtien, status, thoigian) VALUES (?, ?, ?, 2, NOW())");
-                $stmt->execute([$id_taikhoan, $diachi, $tongcong]);
-                $donhang_id = $conn->lastInsertId();
-            }
+                // Thêm chi tiết đơn hàng
+                $stmt_ct = $conn->prepare("INSERT INTO ctdonhang (id_donhang, id_sanpham, soluong, gia) VALUES (?, ?, ?, ?)");
+                foreach ($_SESSION['cart'] as $item) {
+                    $stmt_ct->execute([$donhang_id, $item['masp'], $item['soluong'], $item['gia']]);
+                }
 
-            // Thêm chi tiết đơn hàng
-            $stmt_ct = $conn->prepare("INSERT INTO ctdonhang (id_donhang, id_sanpham, soluong, gia) VALUES (?, ?, ?, ?)");
-            foreach ($_SESSION['cart'] as $item) {
-                $stmt_ct->execute([$donhang_id, $item['masp'], $item['soluong'], $item['gia']]);
+                // Xóa giỏ hàng
+                unset($_SESSION['cart']);
+                $order_success = true;
+            } catch (Exception $e) {
+                $error = "Lỗi xử lý đơn hàng: " . $e->getMessage();
             }
-
-            // Xóa giỏ hàng
-            unset($_SESSION['cart']);
-            $order_success = true; // Đặt hàng thành công
-        } catch (PDOException $e) {
-            $error = "Lỗi xử lý đơn hàng: " . $e->getMessage();
         }
     }
 }
@@ -198,7 +203,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             <tbody>
                                 <?php
                                 $tongtien = 0;
-                                // Kiểm tra lại $_SESSION['cart'] trước khi sử dụng
                                 if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                     foreach ($_SESSION['cart'] as $item):
                                         $thanhtien = $item['gia'] * $item['soluong'];

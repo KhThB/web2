@@ -1,20 +1,26 @@
-<?php 
-    include_once '../connect.php';
-    if (isset($_GET["logout"])) {
-        setcookie("user", null, -1, '/');
-        header('location: login_admin.php'); // Chuyển hướng đến /admin/login.php
-        exit();
-    }
-    if (isset($_COOKIE["user"])) {
-        $user = $_COOKIE["user"];
-        $stmt = $conn->prepare("SELECT phanquyen FROM taikhoan WHERE taikhoan = ?");
-        $stmt->execute([$user]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $permission = $row ? $row['phanquyen'] : 0;
-        if ($permission == 1) {
-  
-  
+<?php
+$connectFile = '../connect.php';
+if (file_exists($connectFile)) {
+    include_once($connectFile);
+} else {
+    die("Không tìm thấy tệp kết nối cơ sở dữ liệu.");
+}
+
+if (isset($_GET["logout"])) {
+    setcookie("user", null, -1, '/');
+    header('location: login_admin.php');
+    exit();
+}
+
+if (isset($_COOKIE["user"])) {
+    $user = $_COOKIE["user"];
+    $stmt = $conn->prepare("SELECT phanquyen FROM taikhoan WHERE taikhoan = ?");
+    $stmt->execute([$user]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $permission = $row ? $row['phanquyen'] : 0;
+    if ($permission == 1) {
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -215,13 +221,13 @@
             </button>
           </div>
         </nav>
-    <?php
-        }else{
-            header('location: login_admin.php'); // Chuyển hướng đến /admin/login.php
-            exit();
-        }
-    }else{
-      header('location: login_admin.php'); // Chuyển hướng đến /admin/login.php
-      exit();
+        <?php
+    } else {
+        header('location: login_admin.php');
+        exit();
     }
+} else {
+    header('location: login_admin.php');
+    exit();
+}
 ?>
