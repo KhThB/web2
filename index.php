@@ -80,29 +80,21 @@
                 </div>
             </div>
             <div class="row align-items-center justify-content-between">
-    <?php 
-        // Truy vấn lấy 4 sản phẩm được xem nhiều nhất, kết hợp với danh mục
-        $sql = "SELECT sp.*, dm.danhmuc AS ten_danhmuc 
-                FROM sanpham sp 
-                LEFT JOIN danhmuc dm ON sp.id_danhmuc = dm.id_dm 
-                ORDER BY sp.luotxem DESC 
-                LIMIT 4";
-        $products = selectAll($sql, []);
-        
-        foreach ($products as $item) {
-    ?>
-    <div class="col-lg-6 col-sm-6">
-        <div class="single_feature_post_text">
-            <p><?= htmlspecialchars($item['ten_danhmuc'] ?? 'Không có danh mục') ?></p>
-            <h3><?= htmlspecialchars($item['ten']) ?></h3>
-            <a href="detail.php?id=<?= $item['id'] ?>" class="feature_btn">KHÁM PHÁ NGAY <i class="fas fa-play"></i></a>
-            <img height="250px" src="img/product/<?= htmlspecialchars($item['anh1']) ?>" alt="">
-        </div>
-    </div>
-    <?php
-        }
-    ?>
-</div>
+                <?php 
+                    foreach (selectAll("SELECT * FROM sanpham ORDER BY luotxem DESC LIMIT 4 ") as $item) {
+                ?>
+                <div class="col-lg-6 col-sm-6">
+                    <div class="single_feature_post_text">
+                        <p>Apple</p>
+                        <h3><?= $item['ten'] ?></h3>
+                        <a href="detail.php?id=<?= $item['id'] ?>" class="feature_btn">KHÁM PHÁ NGAY <i class="fas fa-play"></i></a>
+                        <img height="250px" src="img/product/<?= $item['anh1'] ?>" alt="">
+                    </div>
+                </div>
+                <?php
+                }
+                ?>
+            </div>
         </div>
     </section>
 
@@ -149,7 +141,7 @@
             <div class="row justify-content-center">
                 <div class="col-lg-7">
                     <div class="subscribe_area_text text-center">
-                        <h5>THAM GIA BẢNG TIN CỦA CHÚNG TÔI</h5>
+                        <h5>THAM GIA BẢN TIN CỦA CHÚNG TÔI</h5>
                         <h2>Đăng ký để được cập nhật các ưu đãi mới nhất</h2>
                         <div class="input-group">
                             <input type="text" class="form-control" placeholder="nhập địa chỉ email" aria-label="Recipient's username" aria-describedby="basic-addon2">
