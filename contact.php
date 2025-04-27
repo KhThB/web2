@@ -82,9 +82,7 @@
                         <div class="row">
                             <div class="col-12">
                                 <div id="map">
-                                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.779913365154!2d105.82433209999999!3d21.
-                                        0014576!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ac85c14f1557%3A0xcd7d66f85770532!2sSmobile!
-                                        5e0!3m2!1svi!2s!4v1651914742953!5m2!1svi!2s" 
+                                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3926.467880420059!2d106.6796796537774!3d10.759916979704304!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1b7c3ed289%3A0xa06651894598e488!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBTw6BpIEfDsm4!5e0!3m2!1svi!2s!4v1745476461696!5m2!1svi!2s"
                                         width="100%" height="300" style="border:0;" allowfullscreen="" 
                                         loading="lazy" referrerpolicy="no-referrer-when-downgrade">
                                     </iframe>
@@ -97,14 +95,14 @@
                         <span class="contact-info__icon"><i class="ti-home"></i></span>
                         <div class="media-body">
                             <h3>Địa Chỉ</h3>
-                            <p>1A6 P. Cù Chính Lan, Khương Thượng, Thanh Xuân, Hà Nội</p>
+                            <p>273 Đ. An Dương Vương, Phường 2, Quận 5, Hồ Chí Minh</p>
                         </div>
                     </div>
                     <div class="media contact-info">
                         <span class="contact-info__icon"><i class="ti-tablet"></i></span>
                         <div class="media-body">
                             <h3>Hotline</h3>
-                            <p>0839.363.363 (8h00 - 22h00)</p>
+                            <p>0328.759.633 (8h00 - 22h00)</p>
                         </div>
                     </div>
                     <div class="media contact-info">

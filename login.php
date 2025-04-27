@@ -52,7 +52,7 @@
 
 <body>
 
-    <?php include 'header.php';?>
+   
 
   <!--================Home Banner Area =================-->
   <!-- breadcrumb start-->
@@ -90,15 +90,31 @@
                                 if (isset($_POST["dangnhap"])) {
                                     $email = ($_POST["email"]);
                                     $matkhau = ($_POST["matkhau"]);
-                                    if (rowCount("SELECT * FROM taikhoan WHERE taikhoan='$email' && matkhau='$matkhau' && status =0") == 1) {
+                                   
+
+                                    $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE taikhoan = ? AND matkhau = ? AND status = 0 AND phanquyen != 1");
+                                    $stmt->execute([$email, $matkhau]);
+                                    
+                                    if ($stmt->rowCount() == 1) {
                                         setcookie('user', $email, time() + (86400 * 30), "/");
                                         header('location:index.php');
-                                    } 
-                                    else if (rowCount("SELECT * FROM taikhoan WHERE status =1") == 1){
-                                        $error = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin';
-                                    }
-                                    else{
-                                        $error = 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại';
+                                        exit();
+                                    } else {
+                                        // Kiểm tra xem tài khoản có bị khóa không
+                                        $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE taikhoan = ? AND status = 1");
+                                        $stmt->execute([$email]);
+                                        if ($stmt->rowCount() == 1) {
+                                            $error = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin';
+                                        } else {
+                                            // Kiểm tra xem có phải tài khoản admin không
+                                            $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE taikhoan = ? AND phanquyen = 1");
+                                            $stmt->execute([$email]);
+                                            if ($stmt->rowCount() == 1) {
+                                                $error = 'Tài khoản này chỉ có thể đăng nhập qua trang quản trị.';
+                                            } else {
+                                                $error = 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại';
+                                            }
+                                        }
                                     }
                                 }
                             ?>

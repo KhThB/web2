@@ -10,6 +10,7 @@
             if (isset($_POST['them'])) {
                 $ten = $_POST["ten"];
                 $id_danhmuc = $_POST["danhmuc"];
+                $masx=1;
                 $manhinh = $_POST["manhinh"];
                 $hedieuhanh = $_POST["hedieuhanh"];
                 $cpu = $_POST["cpu"];
@@ -34,7 +35,7 @@
                 move_uploaded_file($tmp2, $dir . $anh2);
                 move_uploaded_file($tmp3, $dir . $anh3);
                 
-                selectAll("INSERT INTO sanpham VALUES(NULL,$id_danhmuc,'$ten','$manhinh','$hedieuhanh','$cpu','$camera',$pin,$ram,'$bonho',$gia,'$anh1','$anh2','$anh3','$chitiet','$mota',0,1)");
+                selectAll("INSERT INTO sanpham VALUES(NULL,$id_danhmuc,$masx,'$ten','$manhinh','$hedieuhanh','$cpu','$camera',$pin,$ram,'$bonho',$gia,'$anh1','$anh2','$anh3','$chitiet','$mota',0,0)");
                 header('location:product.php');
             }
         ?>

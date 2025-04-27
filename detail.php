@@ -1,3 +1,4 @@
+```php
 <?php
 include './connect.php';
 if (isset($_GET["id"])) {
@@ -19,7 +20,7 @@ if (isset($_GET["id"])) {
         $luotxem = $row['luotxem'];
         $cateid = $row['id_danhmuc'];
         $chitiet = $row['chitiet'];
-        $mota =$row['mota'];
+        $mota = $row['mota'];
         foreach (selectAll("SELECT * FROM danhmuc WHERE id_dm={$row['id_danhmuc']}") as $item) {
             $danhmuc = $item['danhmuc'];
         }
@@ -144,22 +145,6 @@ if (isset($_GET["id"])) {
                                             <span class="number-increment"> <i class="ti-plus"></i></span>
                                         </div>
 
-
-                                        <!-- if((rowCount đơn hàng where status =0) =0){
-                                                insert dơn hàng ;
-                                                insert ctđơn hàng (fk là id đơn hàng mới tạo, và thông tin sản phẩm vừa thêm);
-                                            }
-                                            else{
-                                                ìf(selectAll ct đơn hàng đã có sp muốn thêm ){
-                                                    update số lượng
-                                                }
-                                                else{
-                                                    insert ctđơn hàng (fk là id đơn hàng mới tạo, và thông tin sản phẩm vừa thêm);
-
-                                                }
-                                            } -->
-
-
                                         <?php 
                                             if (isset($_POST["addcart"])) {
                                                 if (isset($_COOKIE["user"])) {
@@ -169,25 +154,25 @@ if (isset($_GET["id"])) {
                                                     foreach (selectAll("SELECT * FROM `taikhoan` WHERE taikhoan='$taikhoan'") as $item) {
                                                         $id_nguoidung = $item['id'];
                                                     }
-                                                    if (rowCount("SELECT * FROM donhang WHERE status=0 && id_taikhoan=$id_nguoidung")>0) {
+                                                    if (rowCount("SELECT * FROM donhang WHERE status=0 && id_taikhoan=$id_nguoidung") > 0) {
                                                         foreach (selectAll("SELECT * FROM donhang WHERE status=0 && id_taikhoan=$id_nguoidung") as $item) {
-                                                            $idDhcu= $item['id'];
+                                                            $idDhcu = $item['id'];
                                                         }
-                                                        if (rowCount("SELECT * FROM ctdonhang WHERE id_donhang = $idDhcu && id_sanpham = $idSanpham")>0) {
+                                                        if (rowCount("SELECT * FROM ctdonhang WHERE id_donhang = $idDhcu && id_sanpham = $idSanpham") > 0) {
                                                             selectAll("UPDATE ctdonhang SET soluong= $soluong+soluong WHERE id_donhang = $idDhcu && id_sanpham = $idSanpham");
-                                                        }else{
+                                                        } else {
                                                             selectAll("INSERT INTO ctdonhang VALUES(null,$idDhcu,$idSanpham,$soluong,$giatien)");
                                                         }
-                                                    }else{
-                                                        selectAll("INSERT INTO donhang VALUES(null,$id_nguoidung,0,0,null,null)");
+                                                    } else {
+                                                        // Sửa câu lệnh INSERT để tương thích với bảng donhang có thêm cột hoten và sdt
+                                                        selectAll("INSERT INTO donhang (id, id_taikhoan, status, tongtien, thoigian, diachi, hoten, sdt) VALUES (null, ?, 0, 0, null, null, null, null)", [$id_nguoidung]);
                                                         foreach (selectAll("SELECT * FROM donhang WHERE status=0 && id_taikhoan=$id_nguoidung") as $item) {
-                                                            $idDhmoi= $item['id'];
+                                                            $idDhmoi = $item['id'];
                                                         }
                                                         selectAll("INSERT INTO ctdonhang VALUES(null,$idDhmoi,$idSanpham,$soluong,$giatien)");
                                                     }
-                                                    
                                                     echo "<meta http-equiv='refresh' content='0'>";
-                                                }else{
+                                                } else {
                                                     echo "<script>alert('Vui lòng đăng nhập để mua hàng')</script>";
                                                 }
                                             }
@@ -383,7 +368,7 @@ if (isset($_GET["id"])) {
                                             }
                                             selectAll("INSERT INTO `binhluan` VALUES (NULL, $id_nguoidung, $idSanpham,'$noidung')");
                                             echo "<meta http-equiv='refresh' content='0'>";
-                                        }else{
+                                        } else {
                                             echo "<script>alert('Vui lòng đăng nhập để bình luận')</script>";
                                         }
                                     }
@@ -446,7 +431,6 @@ if (isset($_GET["id"])) {
 
     <?php include 'footer.php';?>
 
-
     <!-- jquery plugins here-->
     <!-- jquery -->
     <script src="js/jquery-1.12.1.min.js"></script>
@@ -480,4 +464,4 @@ if (isset($_GET["id"])) {
 </body>
 
 </html>
-
+```
