@@ -1,9 +1,9 @@
 <?php 
     include './connect.php';
     if (isset($_GET["id"])) {
-        foreach (selectAll("SELECT * FROM danhmuc WHERE id=" . (int)$_GET['id']) as $item) {
+        foreach (selectAll("SELECT * FROM danhmuc WHERE id_dm=" . (int)$_GET['id']) as $item) {
            $tendanhmuc = $item['danhmuc'];
-           $iddanhmuc = $item['id'];
+           $iddanhmuc = $item['id_dm'];
         }
     }
 ?>
@@ -53,10 +53,44 @@
 .a2 {
     height: 230px;
 }
-.price_filter input {
-    width: 100%;
-    padding: 5px;
+.filter_section {
+    margin-bottom: 20px;
+}
+.filter_section label {
+    display: block;
     margin: 5px 0;
+}
+.filter_section input[type="checkbox"] {
+    margin-right: 10px;
+}
+.widgets_inner select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+}
+.filter_dropdown .dropdown-menu {
+    padding: 15px;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.filter_dropdown .dropdown-item {
+    padding: 5px 0;
+}
+.filter_dropdown h4 {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+.filter_dropdown .btn-filter {
+    margin-top: 10px;
+    width: 100%;
+}
+.filter_dropdown .search-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
 }
 </style>
 <body>
@@ -67,7 +101,7 @@
             <div class="row justify-content-center a2">
                 <div class="col-lg-8 a2">
                     <div class="a1">
-                        <h2>Sản Phẩm</h2>
+                        <h2><?= isset($tendanhmuc) ? htmlspecialchars($tendanhmuc) : 'Sản Phẩm' ?></h2>
                     </div>
                 </div>
             </div>
@@ -84,22 +118,26 @@
                                 <h3>Danh Mục Sản Phẩm</h3>
                             </div>
                             <div class="widgets_inner">
-                                <ul class="list">
-                                    <?php 
-                                        foreach (selectAll("SELECT * FROM danhmuc") as $item) {
-                                            ?>
-                                                <li><a href="category.php?id=<?= $item['id_dm'] ?>"><?= $item['danhmuc'] ?></a></li>
-                                            <?php
-                                        }
-                                    ?>
-                                </ul>
+                                <form id="category_form">
+                                    <select name="category" onchange="redirectCategory(this.value)">
+                                        <option value="all" <?= !isset($_GET['id']) ? 'selected' : '' ?>>Tất cả</option>
+                                        <?php 
+                                            foreach (selectAll("SELECT * FROM danhmuc") as $item) {
+                                                $selected = (isset($_GET['id']) && $_GET['id'] == $item['id_dm']) ? 'selected' : '';
+                                                ?>
+                                                    <option value="<?= $item['id_dm'] ?>" <?= $selected ?>><?= htmlspecialchars($item['danhmuc']) ?></option>
+                                                <?php
+                                            }
+                                        ?>
+                                    </select>
+                                </form>
                             </div>
                             <!-- Sắp xếp theo giá -->
                             <div class="l_w_title">
-                                <h3>Lọc</h3>
+                                <h3>Sắp Xếp Theo Giá</h3>
                             </div>
                             <div class="widgets_inner">
-                                <form action="product.php" method="GET">
+                                <form action="product.php" method="GET" id="sort_form">
                                     <select name="sort_price" onchange="this.form.submit()">
                                         <option value="">Mặc định</option>
                                         <option value="asc" <?= isset($_GET['sort_price']) && $_GET['sort_price'] == 'asc' ? 'selected' : '' ?>>Giá tăng dần</option>
@@ -108,25 +146,59 @@
                                     <?php if (isset($_GET['tim'])) { ?>
                                         <input type="hidden" name="tim" value="<?= htmlspecialchars($_GET['tim']) ?>">
                                     <?php } ?>
-                                    <?php if (isset($_GET['min_price'])) { ?>
-                                        <input type="hidden" name="min_price" value="<?= htmlspecialchars($_GET['min_price']) ?>">
+                                    <?php if (isset($_GET['id'])) { ?>
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars($_GET['id']) ?>">
                                     <?php } ?>
-                                    <?php if (isset($_GET['max_price'])) { ?>
-                                        <input type="hidden" name="max_price" value="<?= htmlspecialchars($_GET['max_price']) ?>">
-                                    <?php } ?>
+                                    <?php if (isset($_GET['brands'])) { 
+                                        foreach ($_GET['brands'] as $brand) { ?>
+                                            <input type="hidden" name="brands[]" value="<?= htmlspecialchars($brand) ?>">
+                                        <?php } 
+                                    } ?>
+                                    <?php if (isset($_GET['price_ranges'])) { 
+                                        foreach ($_GET['price_ranges'] as $range) { ?>
+                                            <input type="hidden" name="price_ranges[]" value="<?= htmlspecialchars($range) ?>">
+                                        <?php } 
+                                    } ?>
                                 </form>
                             </div>
-                            <!-- Lọc theo khoảng giá -->
+                            <!-- Bộ lọc hãng và giá -->
                             <div class="l_w_title">
-                              
+                                <h3>Bộ Lọc</h3>
                             </div>
-                            <div class="widgets_inner price_filter">
-                                <form action="product.php" method="GET">
-                                    <input type="number" name="min_price" placeholder="Giá tối thiểu" value="<?= isset($_GET['min_price']) ? htmlspecialchars($_GET['min_price']) : '' ?>" min="0">
-                                    <input type="number" name="max_price" placeholder="Giá tối đa" value="<?= isset($_GET['max_price']) ? htmlspecialchars($_GET['max_price']) : '' ?>" min="0">
-                                    <button type="submit" class="btn btn-danger">Lọc</button>
-                                    <?php if (isset($_GET['tim'])) { ?>
-                                        <input type="hidden" name="tim" value="<?= htmlspecialchars($_GET['tim']) ?>">
+                            <div class="widgets_inner filter_section">
+                                <form action="product.php" method="GET" id="filter_form">
+                                    <div class="filter_dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Chọn bộ lọc
+                                        </button>
+                                        <div class="dropdown-menu" aria-labelledby="filterDropdown">
+                                            <input type="text" name="tim" class="search-input" placeholder="Tìm kiếm sản phẩm..." value="<?= isset($_GET['tim']) ? htmlspecialchars($_GET['tim']) : '' ?>">
+                                            <h4>Lọc Theo Hãng</h4>
+                                            <?php
+                                                $brands = ['iPhone', 'Samsung', 'Xiaomi', 'Oppo', 'Vivo'];
+                                                foreach ($brands as $brand) {
+                                                    $checked = (isset($_GET['brands']) && in_array($brand, $_GET['brands'])) ? 'checked' : '';
+                                                    echo "<div class='dropdown-item'><label><input type='checkbox' name='brands[]' value='$brand' $checked> $brand</label></div>";
+                                                }
+                                            ?>
+                                            <h4>Lọc Theo Phân Khúc Giá</h4>
+                                            <?php
+                                                $price_ranges = [
+                                                    'under_5m' => 'Dưới 5 triệu',
+                                                    '5m_10m' => '5 - 10 triệu',
+                                                    '10m_20m' => '10 - 20 triệu',
+                                                    'over_20m' => 'Trên 20 triệu'
+                                                ];
+                                                foreach ($price_ranges as $key => $label) {
+                                                    $checked = (isset($_GET['price_ranges']) && in_array($key, $_GET['price_ranges'])) ? 'checked' : '';
+                                                    echo "<div class='dropdown-item'><label><input type='checkbox' name='price_ranges[]' value='$key' $checked> $label</label></div>";
+                                                }
+                                            ?>
+                                            <button type="submit" class="btn btn-primary btn-filter">Lọc</button>
+                                        </div>
+                                    </div>
+                                    <?php if (isset($_GET['id'])) { ?>
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars($_GET['id']) ?>">
                                     <?php } ?>
                                     <?php if (isset($_GET['sort_price'])) { ?>
                                         <input type="hidden" name="sort_price" value="<?= htmlspecialchars($_GET['sort_price']) ?>">
@@ -152,19 +224,47 @@
                             // Xử lý điều kiện lọc
                             $whereClause = "status = 0";
 
+                            // Lọc theo danh mục
+                            if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+                                $whereClause .= " AND id_danhmuc = " . (int)$_GET['id'];
+                            }
+
                             // Lọc theo từ khóa tìm kiếm
-                            if (isset($_GET["tim"])) {
+                            if (isset($_GET["tim"]) && !empty($_GET["tim"])) {
                                 $keyword = $conn->quote("%" . $_GET["tim"] . "%");
                                 $whereClause .= " AND ten LIKE $keyword";
                             }
 
-                            // Lọc theo khoảng giá
-                            if (isset($_GET['min_price']) && is_numeric($_GET['min_price']) && isset($_GET['max_price']) && is_numeric($_GET['max_price'])) {
-                                $min_price = (int)$_GET['min_price'];
-                                $max_price = (int)$_GET['max_price'];
-                                if ($min_price <= $max_price) {
-                                    $whereClause .= " AND gia BETWEEN $min_price AND $max_price";
+                            // Lọc theo hãng (dựa trên tên sản phẩm)
+                            if (isset($_GET['brands']) && !empty($_GET['brands'])) {
+                                $brandConditions = [];
+                                foreach ($_GET['brands'] as $brand) {
+                                    $brand = $conn->quote("%" . $brand . "%");
+                                    $brandConditions[] = "ten LIKE $brand";
                                 }
+                                $whereClause .= " AND (" . implode(" OR ", $brandConditions) . ")";
+                            }
+
+                            // Lọc theo phân khúc giá
+                            if (isset($_GET['price_ranges']) && !empty($_GET['price_ranges'])) {
+                                $priceConditions = [];
+                                foreach ($_GET['price_ranges'] as $range) {
+                                    switch ($range) {
+                                        case 'under_5m':
+                                            $priceConditions[] = "gia < 5000000";
+                                            break;
+                                        case '5m_10m':
+                                            $priceConditions[] = "gia BETWEEN 5000000 AND 10000000";
+                                            break;
+                                        case '10m_20m':
+                                            $priceConditions[] = "gia BETWEEN 10000001 AND 20000000";
+                                            break;
+                                        case 'over_20m':
+                                            $priceConditions[] = "gia > 20000000";
+                                            break;
+                                    }
+                                }
+                                $whereClause .= " AND (" . implode(" OR ", $priceConditions) . ")";
                             }
 
                             // Sắp xếp theo giá
@@ -212,7 +312,12 @@
                                     <ul class="pagination justify-content-center">
                                         <?php if ($current_page > 1) {
                                             $prev_page = $current_page - 1;
-                                            $url = "?per_page=$item_per_page&page=$prev_page" . (isset($_GET['tim']) ? "&tim=" . urlencode($_GET['tim']) : "") . (isset($_GET['sort_price']) ? "&sort_price={$_GET['sort_price']}" : "") . (isset($min_price) ? "&min_price=$min_price&max_price=$max_price" : "");
+                                            $url = "?per_page=$item_per_page&page=$prev_page";
+                                            if (isset($_GET['id'])) $url .= "&id=" . urlencode($_GET['id']);
+                                            if (isset($_GET['tim'])) $url .= "&tim=" . urlencode($_GET['tim']);
+                                            if (isset($_GET['sort_price'])) $url .= "&sort_price={$_GET['sort_price']}";
+                                            if (isset($_GET['brands'])) foreach ($_GET['brands'] as $brand) $url .= "&brands[]=" . urlencode($brand);
+                                            if (isset($_GET['price_ranges'])) foreach ($_GET['price_ranges'] as $range) $url .= "&price_ranges[]=" . urlencode($range);
                                         ?>
                                             <li class="page-item">
                                                 <a class="page-link" href="<?= $url ?>" aria-label="Previous">
@@ -221,7 +326,12 @@
                                             </li>
                                         <?php } ?>
                                         <?php for ($num = 1; $num <= $totalpage; $num++) {
-                                            $url = "?per_page=$item_per_page&page=$num" . (isset($_GET['tim']) ? "&tim=" . urlencode($_GET['tim']) : "") . (isset($_GET['sort_price']) ? "&sort_price={$_GET['sort_price']}" : "") . (isset($min_price) ? "&min_price=$min_price&max_price=$max_price" : "");
+                                            $url = "?per_page=$item_per_page&page=$num";
+                                            if (isset($_GET['id'])) $url .= "&id=" . urlencode($_GET['id']);
+                                            if (isset($_GET['tim'])) $url .= "&tim=" . urlencode($_GET['tim']);
+                                            if (isset($_GET['sort_price'])) $url .= "&sort_price={$_GET['sort_price']}";
+                                            if (isset($_GET['brands'])) foreach ($_GET['brands'] as $brand) $url .= "&brands[]=" . urlencode($brand);
+                                            if (isset($_GET['price_ranges'])) foreach ($_GET['price_ranges'] as $range) $url .= "&price_ranges[]=" . urlencode($range);
                                             if ($num != $current_page) {
                                                 if ($num > $current_page - 3 && $num < $current_page + 3) {
                                         ?>
@@ -233,7 +343,12 @@
                                         } ?>
                                         <?php if ($current_page < $totalpage - 1) {
                                             $next_page = $current_page + 1;
-                                            $url = "?per_page=$item_per_page&page=$next_page" . (isset($_GET['tim']) ? "&tim=" . urlencode($_GET['tim']) : "") . (isset($_GET['sort_price']) ? "&sort_price={$_GET['sort_price']}" : "") . (isset($min_price) ? "&min_price=$min_price&max_price=$max_price" : "");
+                                            $url = "?per_page=$item_per_page&page=$next_page";
+                                            if (isset($_GET['id'])) $url .= "&id=" . urlencode($_GET['id']);
+                                            if (isset($_GET['tim'])) $url .= "&tim=" . urlencode($_GET['tim']);
+                                            if (isset($_GET['sort_price'])) $url .= "&sort_price={$_GET['sort_price']}";
+                                            if (isset($_GET['brands'])) foreach ($_GET['brands'] as $brand) $url .= "&brands[]=" . urlencode($brand);
+                                            if (isset($_GET['price_ranges'])) foreach ($_GET['price_ranges'] as $range) $url .= "&price_ranges[]=" . urlencode($range);
                                         ?>
                                             <li class="page-item">
                                                 <a class="page-link" href="<?= $url ?>" aria-label="Next">
@@ -308,5 +423,30 @@
     <script src="js/stellar.js"></script>
     <script src="js/price_rangs.js"></script>
     <script src="js/custom.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('select[name="category"]').niceSelect();
+            // Đảm bảo dropdown không tự đóng khi click vào checkbox, nút Lọc, hoặc nhập vào thanh tìm kiếm
+            $('.filter_dropdown .dropdown-menu').on('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+
+        function redirectCategory(value) {
+            let url = '';
+            if (value === 'all') {
+                url = 'product.php';
+            } else {
+                url = 'category.php?id=' + value;
+            }
+            // Giữ các tham số bộ lọc hiện tại
+            const params = new URLSearchParams(window.location.search);
+            params.delete('id'); // Xóa id để tránh xung đột
+            if (params.toString()) {
+                url += (url.includes('?') ? '&' : '?') + params.toString();
+            }
+            window.location.href = url;
+        }
+    </script>
 </body>
 </html>

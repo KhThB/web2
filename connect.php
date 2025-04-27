@@ -4,7 +4,7 @@ if (defined('CONNECT_PHP_INCLUDED')) {
 }
 ob_start();
 try {
-    $conn = new PDO("mysql:host=localhost;dbname=smobile;charset=utf8", "root", "");
+    $conn = new PDO("mysql:host=localhost;dbname=smobile2;charset=utf8", "root", "");
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     echo $e->getMessage();

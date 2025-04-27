@@ -2,10 +2,33 @@
 session_start();
 include_once './connect.php';
 
-// Chuyển hướng về giỏ hàng nếu giỏ hàng trống
-if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
-    header("Location: cart.php");
+// Đảm bảo session được khởi tạo
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    error_log("Checkout: Session không hoạt động, khởi tạo lại");
+    session_start();
+}
+
+// Kiểm tra order_id từ cart.php
+if (!isset($_SESSION['order_id']) || empty($_SESSION['order_id'])) {
+    error_log("Checkout: Thiếu order_id trong SESSION, chuyển hướng về cart.php");
+    header("Location: cart.php?error=" . urlencode("Không tìm thấy đơn hàng. Vui lòng thử lại từ giỏ hàng."));
     exit();
+}
+
+// Kiểm tra giỏ hàng
+if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
+    error_log("Checkout: Thiếu giỏ hàng, chuyển hướng về cart.php");
+    header("Location: cart.php?error=" . urlencode("Giỏ hàng của bạn trống!"));
+    exit();
+}
+
+// Kiểm tra dữ liệu giỏ hàng
+foreach ($_SESSION['cart'] as $item) {
+    if (!isset($item['masp'], $item['tensp'], $item['soluong'], $item['gia'])) {
+        error_log("Checkout: Dữ liệu giỏ hàng không hợp lệ: " . json_encode($item, JSON_UNESCAPED_UNICODE));
+        header("Location: cart.php?error=" . urlencode("Dữ liệu giỏ hàng không hợp lệ!"));
+        exit();
+    }
 }
 
 // Kiểm tra cookie user và lấy thông tin tài khoản
@@ -16,19 +39,37 @@ $diachi_macdinh = '';
 
 if (isset($_COOKIE['user']) && !empty($_COOKIE['user'])) {
     $email = $_COOKIE['user'];
-    $taikhoan_rows = selectAll("SELECT id, hoten, sdt, diachi, status, phanquyen FROM taikhoan WHERE taikhoan = ? AND status = 0 AND phanquyen != 1", [$email]);
+    $taikhoan_rows = selectAll("SELECT id, hoten, sdt, diachi, status, phanquyen FROM taikhoan WHERE taikhoan = ? AND status = 0", [$email]);
     if (!empty($taikhoan_rows)) {
         $id_taikhoan = $taikhoan_rows[0]['id'];
         $hoten_macdinh = $taikhoan_rows[0]['hoten'] ?? '';
         $sdt_macdinh = $taikhoan_rows[0]['sdt'] ?? '';
         $diachi_macdinh = $taikhoan_rows[0]['diachi'] ?? '';
+    } else {
+        $error = "Tài khoản không tồn tại hoặc không hợp lệ.";
+        error_log("Checkout: Lỗi - Tài khoản không hợp lệ: email = $email");
     }
 }
 
 // Kiểm tra nếu không có id_taikhoan hợp lệ
 if ($id_taikhoan === null) {
-    header("Location: login.php?error=Vui lòng đăng nhập để đặt hàng");
+    error_log("Checkout: Không có id_taikhoan hợp lệ, chuyển hướng về login.php");
+    header("Location: login.php?error=" . urlencode("Vui lòng đăng nhập để đặt hàng"));
     exit();
+}
+
+// Kiểm tra đơn hàng có tồn tại
+$donhang_id = $_SESSION['order_id'];
+$donhang_rows = selectAll("SELECT * FROM donhang WHERE id = ? AND id_taikhoan = ? AND status = 1", [$donhang_id, $id_taikhoan]);
+if (empty($donhang_rows)) {
+    error_log("Checkout: Đơn hàng không tồn tại hoặc không hợp lệ: order_id = $donhang_id, id_taikhoan = $id_taikhoan");
+    header("Location: cart.php?error=" . urlencode("Đơn hàng không tồn tại. Vui lòng thử lại."));
+    exit();
+}
+
+// Khởi tạo mảng order_info_list nếu chưa tồn tại
+if (!isset($_SESSION['order_info_list'])) {
+    $_SESSION['order_info_list'] = [];
 }
 
 // Xử lý thanh toán
@@ -37,21 +78,37 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $hoten = trim($_POST['hoten'] ?? '');
     $sdt = trim($_POST['sdt'] ?? '');
     $diachi = trim($_POST['diachi'] ?? '');
-    $use_new_info = isset($_POST['use_new_info']) && $_POST['use_new_info'] == '1';
+    $use_new_info = isset($_POST['use_new_info']) && $_POST['use_new_info'] === '1';
     $payment_method = $_POST['payment_method'] ?? '';
+
+    // Ghi log dữ liệu POST
+    error_log("Checkout: Raw POST data: " . json_encode($_POST, JSON_UNESCAPED_UNICODE));
+    error_log("Checkout: use_new_info = " . ($use_new_info ? 'true' : 'false'));
 
     // Nếu không chọn thông tin mới, sử dụng thông tin mặc định
     if (!$use_new_info) {
         $hoten = $hoten_macdinh ?: 'Khách hàng không xác định';
         $sdt = $sdt_macdinh ?: 'Không có';
         $diachi = $diachi_macdinh ?: 'Không có địa chỉ';
+        error_log("Checkout: Sử dụng thông tin mặc định - hoten: '$hoten', sdt: '$sdt', diachi: '$diachi'");
+    } else {
+        // Kiểm tra thông tin mới
+        if (empty($hoten) || empty($sdt) || empty($diachi)) {
+            $error = "Vui lòng điền đầy đủ thông tin nhận hàng mới.";
+            error_log("Checkout: Lỗi - Thiếu thông tin nhận hàng mới");
+        } elseif (strlen($hoten) > 100 || strlen($sdt) > 15 || strlen($diachi) > 255) {
+            $error = "Thông tin nhận hàng vượt quá độ dài cho phép.";
+            error_log("Checkout: Lỗi - Dữ liệu quá dài: hoten='$hoten', sdt='$sdt', diachi='$diachi'");
+        }
     }
 
     // Kiểm tra dữ liệu đầu vào
-    if (empty($hoten) || empty($sdt) || empty($diachi) || empty($payment_method)) {
-        $error = "Vui lòng điền đầy đủ các thông tin bắt buộc.";
-    } elseif (!preg_match('/^[0-9]{10,11}$/', $sdt)) {
+    if (empty($payment_method)) {
+        $error = "Vui lòng chọn phương thức thanh toán.";
+        error_log("Checkout: Lỗi - Thiếu phương thức thanh toán");
+    } elseif (!empty($sdt) && !preg_match('/^[0-9]{10,11}$/', $sdt)) {
         $error = "Số điện thoại không hợp lệ.";
+        error_log("Checkout: Lỗi - Số điện thoại không hợp lệ: '$sdt'");
     } else {
         // Tính tổng tiền
         $tongtien = 0;
@@ -61,37 +118,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $phiship = 50000;
         $tongcong = $tongtien + $phiship;
 
-        // Kiểm tra id_taikhoan
-        $taikhoan_check = selectAll("SELECT id FROM taikhoan WHERE id = ? AND status = 0 AND phanquyen != 1", [$id_taikhoan]);
-        if (empty($taikhoan_check)) {
-            $error = "Lỗi: Tài khoản không tồn tại hoặc không hợp lệ.";
-        } else {
-            try {
-                // Kiểm tra đơn hàng hiện có (status=1)
-                $existing_order = selectAll("SELECT * FROM donhang WHERE id_taikhoan = ? AND status = 1 LIMIT 1", [$id_taikhoan]);
-                if (!empty($existing_order)) {
-                    $donhang_id = $existing_order[0]['id'];
-                    $stmt = $conn->prepare("UPDATE donhang SET diachi = ?, tongtien = ?, thoigian = NOW(), status = 1 WHERE id = ?");
-                    $stmt->execute([$diachi, $tongcong, $donhang_id]);
-                    exSQL("DELETE FROM ctdonhang WHERE id_donhang = ?", [$donhang_id]);
-                } else {
-                    $stmt = $conn->prepare("INSERT INTO donhang (id_taikhoan, diachi, tongtien, status, thoigian) VALUES (?, ?, ?, 2, NOW())");
-                    $stmt->execute([$id_taikhoan, $diachi, $tongcong]);
-                    $donhang_id = $conn->lastInsertId();
-                }
+        try {
+            // Bắt đầu giao dịch
+            $conn->beginTransaction();
 
-                // Thêm chi tiết đơn hàng
-                $stmt_ct = $conn->prepare("INSERT INTO ctdonhang (id_donhang, id_sanpham, soluong, gia) VALUES (?, ?, ?, ?)");
-                foreach ($_SESSION['cart'] as $item) {
-                    $stmt_ct->execute([$donhang_id, $item['masp'], $item['soluong'], $item['gia']]);
-                }
-
-                // Xóa giỏ hàng
-                unset($_SESSION['cart']);
-                $order_success = true;
-            } catch (Exception $e) {
-                $error = "Lỗi xử lý đơn hàng: " . $e->getMessage();
+            // Cập nhật thông tin đơn hàng
+            $stmt = $conn->prepare("UPDATE donhang SET hoten = ?, sdt = ?, diachi = ?, tongtien = ?, thoigian = NOW() WHERE id = ? AND id_taikhoan = ? AND status = 1");
+            if (!$stmt->execute([$hoten, $sdt, $diachi, $tongcong, $donhang_id, $id_taikhoan])) {
+                throw new Exception("Lỗi cập nhật đơn hàng ID $donhang_id: " . implode(", ", $stmt->errorInfo()));
             }
+            error_log("Checkout: Cập nhật đơn hàng ID $donhang_id thành công - hoten: '$hoten', sdt: '$sdt', diachi: '$diachi'");
+
+            // Lưu thông tin vào SESSION
+            $_SESSION['order_info_list'][$donhang_id] = [
+                'hoten' => $hoten,
+                'sdt' => $sdt,
+                'diachi' => $diachi
+            ];
+            $_SESSION['latest_order_id'] = $donhang_id;
+            error_log("Checkout: Đã lưu SESSION order_info_list[$donhang_id]: " . json_encode($_SESSION['order_info_list'][$donhang_id], JSON_UNESCAPED_UNICODE));
+            error_log("Checkout: Đã lưu SESSION latest_order_id: $donhang_id");
+
+            // Lưu thông tin vào COOKIE
+            $cookie_data = json_encode($_SESSION['order_info_list'], JSON_UNESCAPED_UNICODE);
+            if (!headers_sent()) {
+                if (!setcookie('order_info_list', $cookie_data, time() + (7 * 24 * 3600), "/", "", false, true)) {
+                    error_log("Checkout: Lỗi khi lưu cookie order_info_list");
+                } else {
+                    error_log("Checkout: Đã lưu COOKIE order_info_list: " . $cookie_data);
+                }
+            } else {
+                error_log("Checkout: Lỗi - Headers đã được gửi, không thể thiết lập COOKIE");
+            }
+
+            // Xóa giỏ hàng
+            unset($_SESSION['cart']);
+            unset($_SESSION['order_id']); // Xóa order_id để tránh trùng lặp
+
+            // Commit giao dịch
+            $conn->commit();
+            $order_success = true;
+        } catch (Exception $e) {
+            $conn->rollBack();
+            $error = "Lỗi xử lý đơn hàng: " . $e->getMessage();
+            error_log("Checkout: Lỗi xử lý đơn hàng: " . $e->getMessage());
         }
     }
 }
@@ -184,6 +254,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <div class="text-center">
                     <h2>Cảm ơn bạn đã đặt hàng!</h2>
                     <p>Đơn hàng của bạn đã được ghi nhận. Chúng tôi sẽ xử lý sớm nhất có thể.</p>
+                    <p>Mã đơn hàng của bạn là: <strong>#<?= htmlspecialchars($donhang_id) ?></strong>. Vui lòng ghi lại để tra cứu.</p>
                     <a href="index.php" class="btn btn-primary">Quay về trang chủ</a>
                 </div>
             <?php else: ?>
@@ -256,15 +327,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             </div>
                             <div class="mb-3">
                                 <label for="hoten" class="form-label">Họ và Tên <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="hoten" name="hoten" value="<?= isset($hoten) && isset($use_new_info) ? htmlspecialchars($hoten) : '' ?>" disabled required>
+                                <input type="text" class="form-control" id="hoten" name="hoten" value="<?= isset($hoten) && isset($use_new_info) ? htmlspecialchars($hoten) : ($hoten_macdinh ?: '') ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="sdt" class="form-label">Số Điện Thoại <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="sdt" name="sdt" value="<?= isset($sdt) && isset($use_new_info) ? htmlspecialchars($sdt) : '' ?>" disabled required>
+                                <input type="text" class="form-control" id="sdt" name="sdt" value="<?= isset($sdt) && isset($use_new_info) ? htmlspecialchars($sdt) : ($sdt_macdinh ?: '') ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="diachi" class="form-label">Địa Chỉ Nhận Hàng <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="diachi" name="diachi" rows="4" disabled required><?= isset($diachi) && isset($use_new_info) ? htmlspecialchars($diachi) : '' ?></textarea>
+                                <textarea class="form-control" id="diachi" name="diachi" rows="4" required><?= isset($diachi) && isset($use_new_info) ? htmlspecialchars($diachi) : ($diachi_macdinh ?: '') ?></textarea>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Phương Thức Thanh Toán <span class="text-danger">*</span></label>
@@ -318,14 +389,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ];
             if (this.checked) {
                 fields.forEach(field => {
-                    field.disabled = false;
-                    field.focus();
+                    field.value = ''; // Xóa giá trị mặc định khi chọn nhập mới
                 });
             } else {
-                fields.forEach(field => {
-                    field.disabled = true;
-                    field.value = '';
-                });
+                fields[0].value = '<?= addslashes($hoten_macdinh ?: '') ?>';
+                fields[1].value = '<?= addslashes($sdt_macdinh ?: '') ?>';
+                fields[2].value = '<?= addslashes($diachi_macdinh ?: '') ?>';
             }
         });
     </script>
